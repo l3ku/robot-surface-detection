@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from pprint import pprint
+import matplotlib.pyplot as plt
 
 train_data = np.load('X_train_kaggle.npy')
 
@@ -39,3 +40,19 @@ for i in classified_data:
 		 np.min(classified_data[i][j])]
 
 pprint(class_statistics)
+
+plt_a1 = np.concatenate(classified_data["soft_tiles"][0])
+plt_a2 = np.concatenate(classified_data["soft_tiles"][7])
+
+plt_b1 = np.concatenate(classified_data["hard_tiles"][0])
+plt_b2 = np.concatenate(classified_data["hard_tiles"][7])
+
+plt.figure()
+plt.plot(plt_b1, plt_b2, "b+")
+plt.plot(plt_a1, plt_a2, "r+")
+plt.show()
+
+
+#plt(np.concatenate(classified_data["hard_tiles"][8]),\
+#    np.concatenate(classified_data["hard_tiles"][9]), linestyle="None",\
+#    marker="+", color="b")
