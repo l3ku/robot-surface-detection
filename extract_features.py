@@ -19,7 +19,7 @@ def extract_ravel(data):
     Parameters
     ----------
     data : list
-      The X_data from the train_test_split function
+      The X_data from the train_test_split function made from the blocks
 
     Returns
     -------
@@ -43,7 +43,7 @@ def extract_mean(data):
     Parameters
     ----------
     data : list
-      The X_data from the train_test_split function
+      The X_data from the train_test_split function made from the blocks
 
     Returns
     -------
@@ -67,7 +67,7 @@ def extract_var_mean(data):
     Parameters
     ----------
     data : list
-      The X_data from the train_test_split function
+      The X_data from the train_test_split function made from the blocks
 
     Returns
     -------
