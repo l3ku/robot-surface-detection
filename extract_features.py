@@ -9,6 +9,7 @@ Meant to be used with just the X_data.
 TODO:
 Maybe cleaning?
 """
+
 import numpy as np
 
 def extract_ravel(data):
@@ -36,6 +37,20 @@ def extract_ravel(data):
 
 
 def extract_mean(data):
+    """
+    Calculates mean from the data and returns it
+
+    Parameters
+    ----------
+    data : list
+      The X_data from the train_test_split function
+
+    Returns
+    -------
+    mean_data : list
+      The same structure as the X_data, just the single sample layer full sensor
+      data replaced with the means
+    """
     mean_data = []
     for i in range(len(data)):
         mean_data.append([])
@@ -46,6 +61,20 @@ def extract_mean(data):
 
 
 def extract_var_mean(data):
+    """
+    Calculates variance and mean from the data and returns it
+
+    Parameters
+    ----------
+    data : list
+      The X_data from the train_test_split function
+
+    Returns
+    -------
+    var_mean_data : list
+      The same structure as the X_data, just the single sample layer full sensor
+      data replaced with the variances and means
+    """
     var_mean_data = []
     for i in range(len(data)):
         var_mean_data.append([])
