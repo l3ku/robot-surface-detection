@@ -29,9 +29,7 @@ def extract_ravel(data):
     """
     raveled_data = []
     for i in range(len(data)):
-        raveled_data.append([])
-        for j in range(len(data[i])):
-            raveled_data[i][j] = data[i][j].ravel()
+        raveled_data.append(np.ravel(data[i]))
 
     return raveled_data
 
@@ -53,10 +51,7 @@ def extract_mean(data):
     """
     mean_data = []
     for i in range(len(data)):
-        mean_data.append([])
-        for j in range(len(data[i])):
-            mean_data[i].append(np.mean(data[i][j]))
-
+        mean_data.append(np.mean(data[i], axis=1))
     return mean_data
 
 
