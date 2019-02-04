@@ -72,10 +72,7 @@ def extract_var_mean(data):
     """
     var_mean_data = []
     for i in range(len(data)):
-        var_mean_data.append([])
-        for j in range(len(data[i])):
-            var_mean_data[i].append(np.var(data[i][j]))
-            var_mean_data[i].append(np.mean(data[i][j]))
+        var_mean_data.append((np.var(data[i]), np.mean(data[i])))
 
     return var_mean_data
 
