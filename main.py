@@ -20,7 +20,7 @@ if __name__ == '__main__':
 	classes_array = np.array(all_id_classes_transformed)
 
 	# Split the groups to training and validation data.
-	gss = model_selection.GroupShuffleSplit(n_splits=10, test_size=0.2)
+	gss = model_selection.GroupShuffleSplit(n_splits=1, test_size=0.2)
 	data_split = gss.split(groups_csv[:, 0], groups_csv[:, 2], groups_csv[:, 1])
 
 	# Initialize LDA
@@ -28,42 +28,56 @@ if __name__ == '__main__':
 	lda2 = discriminant_analysis.LinearDiscriminantAnalysis()
 	lda3 = discriminant_analysis.LinearDiscriminantAnalysis()
 
-	SVC_list = [SVC(), SVC(), SVC(), SVC(kernel="linear"), SVC(kernel="linear"), SVC(kernel="linear")]
+	LR1 = LogisticRegression(random_state=0, solver='lbfgs', multi_class='multinomial')
+	LR2 = LogisticRegression(random_state=0, solver='lbfgs', multi_class='multinomial')
+	LR3 = LogisticRegression(random_state=0, solver='lbfgs', multi_class='multinomial')
+
+	RF1 = RandomForestClassifier(n_estimators=100, max_depth=5, random_state=0)
+	RF2 = RandomForestClassifier(n_estimators=100, max_depth=5, random_state=0)
+	RF3 = RandomForestClassifier(n_estimators=100, max_depth=5, random_state=0)
+
+	clf_list = [lda1, lda2, lda3, SVC(), SVC(), SVC(), SVC(kernel="linear"), SVC(kernel="linear"), SVC(kernel="linear"),\
+				LR1, LR2, LR3, RF1, RF2, RF3]
 
 	# Feature data
 	ravel_data = np.array(extract_ravel(train_data))
 	mean_data = np.array(extract_mean(train_data))
 	var_mean_data = np.array(extract_var_mean(train_data))
-	
+
+	score_list = []
+
 	round = 0
 	for train, test in data_split:
-		X_train = train_data[train]
 		y_train = classes_array[train]
-		X_validation = train_data[test]
 		y_validation = classes_array[test]
 
 		# a.) Use ravel features
 		F_train = ravel_data[train]
 		F_validation = ravel_data[test]
-		lda1.fit(F_train, y_train)
-		predicted = lda1.predict(F_validation)
+		clf_list[0].fit(F_train, y_train)
+		predicted = clf_list[0].predict(F_validation)
 		print(f'a.) Round {round}: Accuracy with np.ravel(): {metrics.accuracy_score(y_validation, predicted)}')
+		score_list.append(metrics.accuracy_score(y_validation, predicted))
 
-		SVC_list[0].fit(F_train, y_train)
-		predicted = SVC_list[0].predict(F_validation)
+		clf_list[3].fit(F_train, y_train)
+		predicted = clf_list[3].predict(F_validation)
 		print(f'aa.) Round {round}: Accuracy with np.ravel(): {metrics.accuracy_score(y_validation, predicted)}')
+		score_list.append(metrics.accuracy_score(y_validation, predicted))
 
-		SVC_list[3].fit(F_train, y_train)
-		predicted = SVC_list[3].predict(F_validation)
+		clf_list[6].fit(F_train, y_train)
+		predicted = clf_list[6].predict(F_validation)
 		print(f'aaa.) Round {round}: Accuracy with np.ravel(): {metrics.accuracy_score(y_validation, predicted)}')
+		score_list.append(metrics.accuracy_score(y_validation, predicted))
 
-		LR1=LogisticRegression(random_state=0, solver='lbfgs',multi_class = 'multinomial').fit(F_train, y_train)
-		predicted = LR1.predict(F_validation)
+		clf_list[9].fit(F_train, y_train)
+		predicted = clf_list[9].predict(F_validation)
 		print(f'aaaa.) Round {round}: Accuracy with np.ravel(): {metrics.accuracy_score(y_validation, predicted)}')
+		score_list.append(metrics.accuracy_score(y_validation, predicted))
 
-		RF1=RandomForestClassifier(n_estimators=100, max_depth=5,random_state = 0).fit(F_train, y_train)
-		predicted = RF1.predict(F_validation)
+		clf_list[12].fit(F_train, y_train)
+		predicted = clf_list[12].predict(F_validation)
 		print(f'aaaaa.) Round {round}: Accuracy with np.ravel(): {metrics.accuracy_score(y_validation, predicted)}')
+		score_list.append(metrics.accuracy_score(y_validation, predicted))
 
 
 
@@ -73,25 +87,30 @@ if __name__ == '__main__':
 		F_train = np.array(F_train)
 		F_validation = np.array(F_validation)
 
-		lda2.fit(F_train, y_train)
-		predicted = lda2.predict(F_validation)
+		clf_list[1].fit(F_train, y_train)
+		predicted = clf_list[1].predict(F_validation)
 		print(f'b.) Round {round}: Accuracy with np.mean(axis=1): {metrics.accuracy_score(y_validation, predicted)}')
+		score_list.append(metrics.accuracy_score(y_validation, predicted))
 
-		SVC_list[1].fit(F_train, y_train)
-		predicted = SVC_list[1].predict(F_validation)
+		clf_list[4].fit(F_train, y_train)
+		predicted = clf_list[4].predict(F_validation)
 		print(f'bb.) Round {round}: Accuracy with np.mean(axis=1): {metrics.accuracy_score(y_validation, predicted)}')
+		score_list.append(metrics.accuracy_score(y_validation, predicted))
 
-		SVC_list[4].fit(F_train, y_train)
-		predicted = SVC_list[4].predict(F_validation)
+		clf_list[7].fit(F_train, y_train)
+		predicted = clf_list[7].predict(F_validation)
 		print(f'bbb.) Round {round}: Accuracy with np.mean(axis=1): {metrics.accuracy_score(y_validation, predicted)}')
+		score_list.append(metrics.accuracy_score(y_validation, predicted))
 
-		LR1 = LogisticRegression(random_state=0, solver='lbfgs', multi_class='multinomial').fit(F_train, y_train)
-		predicted = LR1.predict(F_validation)
+		clf_list[10].fit(F_train, y_train)
+		predicted = clf_list[10].predict(F_validation)
 		print(f'bbbb.) Round {round}: Accuracy with np.mean(axis=1): {metrics.accuracy_score(y_validation, predicted)}')
+		score_list.append(metrics.accuracy_score(y_validation, predicted))
 
-		RF1 = RandomForestClassifier(n_estimators=100, max_depth=5, random_state=0).fit(F_train, y_train)
-		predicted = RF1.predict(F_validation)
+		clf_list[13].fit(F_train, y_train)
+		predicted = clf_list[13].predict(F_validation)
 		print(f'bbbbb.) Round {round}: Accuracy with np.mean(axis=1): {metrics.accuracy_score(y_validation, predicted)}')
+		score_list.append(metrics.accuracy_score(y_validation, predicted))
 
 		# c.) Use mean and variance features
 		F_train = var_mean_data[train]
@@ -99,24 +118,45 @@ if __name__ == '__main__':
 		F_train = np.array(F_train)
 		F_validation = np.array(F_validation)
 
-		lda3.fit(F_train, y_train)
-		predicted = lda3.predict(F_validation)
-		print(f'c.) Round {round}: Accuracy with mean and variance: {metrics.accuracy_score(y_validation, predicted)}')
+		clf_list[2].fit(F_train, y_train)
+		predicted = clf_list[2].predict(F_validation)
+		print(f'c.) Round {round}: Accuracy with mean and var: {metrics.accuracy_score(y_validation, predicted)}')
+		score_list.append(metrics.accuracy_score(y_validation, predicted))
 
-		SVC_list[2].fit(F_train, y_train)
-		predicted = SVC_list[2].predict(F_validation)
-		print(f'cc.) Round {round}: Accuracy with mean and variance: {metrics.accuracy_score(y_validation, predicted)}')
+		clf_list[5].fit(F_train, y_train)
+		predicted = clf_list[5].predict(F_validation)
+		print(f'cc.) Round {round}: Accuracy with mean and var: {metrics.accuracy_score(y_validation, predicted)}')
+		score_list.append(metrics.accuracy_score(y_validation, predicted))
 
-		SVC_list[5].fit(F_train, y_train)
-		predicted = SVC_list[5].predict(F_validation)
-		print(f'ccc.) Round {round}: Accuracy with mean and variance: {metrics.accuracy_score(y_validation, predicted)}')
+		clf_list[8].fit(F_train, y_train)
+		predicted = clf_list[8].predict(F_validation)
+		print(f'ccc.) Round {round}: Accuracy with mean and var: {metrics.accuracy_score(y_validation, predicted)}')
+		score_list.append(metrics.accuracy_score(y_validation, predicted))
 
-		LR1 = LogisticRegression(random_state=0, solver='lbfgs', multi_class='multinomial').fit(F_train, y_train)
-		predicted = LR1.predict(F_validation)
-		print(f'cccc.) Round {round}: Accuracy with mean and variance: {metrics.accuracy_score(y_validation, predicted)}')
+		clf_list[11].fit(F_train, y_train)
+		predicted = clf_list[11].predict(F_validation)
+		print(f'cccc.) Round {round}: Accuracy with mean and var: {metrics.accuracy_score(y_validation, predicted)}')
+		score_list.append(metrics.accuracy_score(y_validation, predicted))
 
-		RF1 = RandomForestClassifier(n_estimators=100, max_depth=5, random_state=0).fit(F_train, y_train)
-		predicted = RF1.predict(F_validation)
-		print(f'ccccc.) Round {round}: Accuracy with mean and variance: {metrics.accuracy_score(y_validation, predicted)}')
+		clf_list[14].fit(F_train, y_train)
+		predicted = clf_list[14].predict(F_validation)
+		print(f'ccccc.) Round {round}: Accuracy with mean and var: {metrics.accuracy_score(y_validation, predicted)}')
+		score_list.append(metrics.accuracy_score(y_validation, predicted))
 
 		round += 1
+
+	print("Best score:", max(score_list))
+	m = max(score_list)
+	print("Index for the classifier:", [i for i, j in enumerate(score_list) if j == m])
+
+	final_data = np.load("X_test_kaggle.npy")
+	var_mean_data = np.array(extract_var_mean(final_data))
+	predicted = clf_list[14].predict(var_mean_data)
+
+	labels = list(le.inverse_transform(predicted))
+
+	with open("submission.csv", "w") as fp:
+		fp.write("# Id,Surface\n")
+
+		for i, label in enumerate(labels):
+			fp.write("%d,%s\n" % (i, label))
