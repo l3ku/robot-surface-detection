@@ -149,6 +149,10 @@ if __name__ == '__main__':
 	m = max(score_list)
 	print("Index for the classifier:", [i for i, j in enumerate(score_list) if j == m])
 
+	F_train = var_mean_data
+	y_train = classes_array
+	clf_list[14].fit(F_train, y_train)
+
 	final_data = np.load("X_test_kaggle.npy")
 	var_mean_data = np.array(extract_var_mean(final_data))
 	predicted = clf_list[14].predict(var_mean_data)
