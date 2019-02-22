@@ -6,13 +6,15 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from extract_features import *
 from sklearn.svm import SVC
+from keras.models import Sequential
+from keras.layers import Dense, Conv1D, Flatten, MaxPooling1D, Dropout
+from keras.utils.np_utils import to_categorical
+from gene_testing import *
 
 
 if __name__ == '__main__':
 	train_data = np.load('X_train_kaggle.npy')
-	#all_id_classes = pd.read_csv('y_train_final_kaggle.csv')
 	all_id_classes = np.genfromtxt('y_train_final_kaggle.csv',delimiter=',',dtype='str')
-	#groups_csv = pd.read_csv('groups.csv').values
 	groups_csv = np.genfromtxt('groups.csv',delimiter=',',dtype='str')
 	le = preprocessing.LabelEncoder()
 	le.fit(all_id_classes[:,1])
@@ -39,13 +41,100 @@ if __name__ == '__main__':
 	clf_list = [lda1, lda2, lda3, SVC(), SVC(), SVC(), SVC(kernel="linear"), SVC(kernel="linear"), SVC(kernel="linear"),\
 				LR1, LR2, LR3, RF1, RF2, RF3]
 
+	# Defining the neural network
+	n_filters = 10
+	len_kernel = 7
+	model = Sequential()
+	model.add(Conv1D(n_filters, len_kernel, input_shape=(10,128), activation='relu', data_format='channels_first'))
+	#model.add(Conv1D(n_filters, len_kernel, activation='relu', data_format='channels_first'))
+	#model.add(MaxPooling1D(pool_size=2))
+	#model.add(Conv1D(int(n_filters/2), len_kernel, activation='relu', data_format='channels_first'))
+	#model.add(Conv1D(int(n_filters/2), len_kernel, activation='relu', data_format='channels_first'))
+	#model.add(MaxPooling1D(pool_size=2))
+	model.add(Flatten())
+	model.add(Dropout(rate=0.4))
+	model.add(Dense(64, activation='relu'))
+	model.add(Dense(9, activation='softmax'))
+
+	model.compile(loss='categorical_crossentropy', optimizer='sgd', metrics=['accuracy'])
+
+	amount_of_inviduals = 7
+	inv_list = [Genetic_invidual([10, 2, 0.4, 64, 64, 30], 0.3, 0.7)\
+     for i in range(amount_of_inviduals)]
+
+	rounds = 10000
+	error = False
+
+	gss = model_selection.GroupShuffleSplit(n_splits=1, test_size=0.2)
+	data_split = gss.split(groups_csv[:, 0], groups_csv[:, 2], groups_csv[:, 1])
+	for i in range(rounds):
+
+		for tr, ts in data_split:
+			train = tr
+			test = ts
+
+		for j in inv_list:
+			n_filters = int(j.params[0]+1)
+			len_kernel = int(j.params[1]*2+1)
+			if len_kernel > 128:
+				len_kernel = 128
+
+			np.random.seed(42)
+
+			model = Sequential()
+			model.add(Conv1D(n_filters, len_kernel, input_shape=(3,128), activation='relu', data_format='channels_first'))
+			#model.add(Conv1D(n_filters, len_kernel, activation='relu', data_format='channels_first'))
+			#model.add(MaxPooling1D(pool_size=2))
+			#model.add(Conv1D(int(n_filters/2), len_kernel, activation='relu', data_format='channels_first'))
+			#model.add(Conv1D(int(n_filters/2), len_kernel, activation='relu', data_format='channels_first'))
+			#model.add(MaxPooling1D(pool_size=2))
+			try:
+				model.add(Flatten())
+			except:
+				print("Ja ny se flatteni veti persiilleen...")
+				i -= 1
+				error = True
+				break
+			model.add(Dropout(rate=j.params[2]))
+			model.add(Dense(int(j.params[3]+1), activation='relu'))
+			model.add(Dense(9, activation='softmax'))
+
+			model.compile(loss='categorical_crossentropy', optimizer='sgd', metrics=['accuracy'])
+
+			y_train = to_categorical(classes_array[train])
+			y_validation = classes_array[test]
+			F_train = np.array([i[7:] for i in train_data[train]])
+			F_validation = np.array([i[7:] for i in train_data[test]])
+
+			#print(np.array([i[7:] for i in train_data[train]]).shape)
+
+			try:
+				model.fit(F_train, y_train, batch_size=int(j.params[4]+1), epochs=int(j.params[5]+1), verbose=0)
+				prediction = model.predict(F_validation)
+				prediction = np.argmax(prediction, axis=1)
+				j.fitness = metrics.accuracy_score(y_validation, prediction)
+				print("Accuracy =", j.fitness, "with params:", j.params)
+			except:
+				print("Virhe parametreilla:", j.params)
+				error = True
+				i -= 1
+				break
+		
+		if error == True:
+			error = False
+		else:
+			print("Cycle:", i, "  The top fitness:", max([j.fitness for j in inv_list]))
+			inv_list = survival_of_the_fittest(inv_list, 0.4)
+		
+
+
 	# Feature data
 	ravel_data = np.array(extract_ravel(train_data))
 	mean_data = np.array(extract_mean(train_data))
 	var_mean_data = np.array(extract_var_mean(train_data))
 
 	score_list = []
-
+	
 	round = 0
 	for train, test in data_split:
 		y_train = classes_array[train]
@@ -144,11 +233,13 @@ if __name__ == '__main__':
 		score_list.append(metrics.accuracy_score(y_validation, predicted))
 
 		round += 1
+		print("Best score:", max(score_list))
+		m = max(score_list)
+		print("Index for the classifier:", [i for i, j in enumerate(score_list) if j == m])
+	
+	
 
-	print("Best score:", max(score_list))
-	m = max(score_list)
-	print("Index for the classifier:", [i for i, j in enumerate(score_list) if j == m])
-
+	"""
 	F_train = var_mean_data
 	y_train = classes_array
 	clf_list[14].fit(F_train, y_train)
@@ -164,3 +255,4 @@ if __name__ == '__main__':
 
 		for i, label in enumerate(labels):
 			fp.write("%d,%s\n" % (i, label))
+	"""
