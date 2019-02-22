@@ -12,6 +12,7 @@ Maybe cleaning?
 
 import numpy as np
 from scipy.stats import *
+from scipy.misc import imresize
 
 def extract_ravel(data):
     """
@@ -120,6 +121,16 @@ def extract_statistical(data):
             statistical[i].append(np.var(np.abs(gradient)))
 
     return statistical
+
+def extract_as_3d_image(data):
+    data = np.array(data)
+    images = []
+    for i in range(0, len(data)):
+        img = np.stack((data[i, 6:],)*3, axis=-1)
+        img = (img-np.min(img))/np.ptp(img)
+        images.append(imresize(img, (img.shape[0]*20, img.shape[1], img.shape[2])))
+
+    return images
 
 
 if __name__ == '__main__':
