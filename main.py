@@ -10,6 +10,7 @@ from keras.models import Sequential
 from keras.layers import Dense, Conv1D, Flatten, MaxPooling1D, Dropout
 from keras.utils.np_utils import to_categorical
 from gene_testing import *
+from tensorflow import set_random_seed
 
 
 if __name__ == '__main__':
@@ -21,6 +22,7 @@ if __name__ == '__main__':
 	all_id_classes_transformed = le.transform(all_id_classes[:,1])
 	classes_array = np.array(all_id_classes_transformed)
 
+	"""
 	# Split the groups to training and validation data.
 	gss = model_selection.GroupShuffleSplit(n_splits=1, test_size=0.2)
 	data_split = gss.split(groups_csv[:, 0], groups_csv[:, 2], groups_csv[:, 1])
@@ -57,9 +59,10 @@ if __name__ == '__main__':
 	model.add(Dense(9, activation='softmax'))
 
 	model.compile(loss='categorical_crossentropy', optimizer='sgd', metrics=['accuracy'])
+	"""
 
 	amount_of_inviduals = 7
-	inv_list = [Genetic_invidual([10, 2, 0.4, 64, 64, 30], 0.3, 0.7)\
+	inv_list = [Genetic_invidual([10, 2, 0.4, 64, 64, 30, 1, 1], 0.3, 0.7)\
      for i in range(amount_of_inviduals)]
 
 	rounds = 10000
@@ -80,9 +83,15 @@ if __name__ == '__main__':
 				len_kernel = 128
 
 			np.random.seed(42)
+			set_random_seed(24)
 
 			model = Sequential()
 			model.add(Conv1D(n_filters, len_kernel, input_shape=(3,128), activation='relu', data_format='channels_first'))
+			error = False
+			for k in range(int(j.params[6])):
+				model.add(Conv1D(int(n_filters), len_kernel, activation='relu', data_format='channels_first'))
+			model.add(MaxPooling1D(pool_size=2))
+
 			#model.add(Conv1D(n_filters, len_kernel, activation='relu', data_format='channels_first'))
 			#model.add(MaxPooling1D(pool_size=2))
 			#model.add(Conv1D(int(n_filters/2), len_kernel, activation='relu', data_format='channels_first'))
@@ -97,6 +106,8 @@ if __name__ == '__main__':
 				break
 			model.add(Dropout(rate=j.params[2]))
 			model.add(Dense(int(j.params[3]+1), activation='relu'))
+			for k in range(int(j.params[7])):
+				model.add(Dense(int(j.params[3]+1), activation='relu'))
 			model.add(Dense(9, activation='softmax'))
 
 			model.compile(loss='categorical_crossentropy', optimizer='sgd', metrics=['accuracy'])
@@ -125,9 +136,8 @@ if __name__ == '__main__':
 		else:
 			print("Cycle:", i, "  The top fitness:", max([j.fitness for j in inv_list]))
 			inv_list = survival_of_the_fittest(inv_list, 0.4)
-		
-
-
+	
+	"""
 	# Feature data
 	ravel_data = np.array(extract_ravel(train_data))
 	mean_data = np.array(extract_mean(train_data))
@@ -239,7 +249,6 @@ if __name__ == '__main__':
 	
 	
 
-	"""
 	F_train = var_mean_data
 	y_train = classes_array
 	clf_list[14].fit(F_train, y_train)

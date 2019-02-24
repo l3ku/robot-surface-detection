@@ -107,7 +107,6 @@ def survival_of_the_fittest(list_of_inviduals, kill_percent):
       The list of inviduals
     """
     list_of_inviduals.sort()
-    list_length = len(list_of_inviduals)
     kill_split = int(len(list_of_inviduals)*kill_percent)
     for i in range(kill_split):
         list_of_inviduals.pop(-i-1)
