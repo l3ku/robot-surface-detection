@@ -51,9 +51,14 @@ class Genetic_invidual:
         new_params = self.params[:]
         for i in range(len_mut):
             i_mut = int(random()*len(self.params))
-            new_params[i_mut] = self.params[i_mut]*(1 - self.val_mut +\
-             2*random()*self.val_mut)
-            self.params.pop(i_mut)
+            if self.params[i_mut] != -1:
+                if self.params[i_mut] == 0:
+                    self.params[i_mut] = 0.5
+                new_params[i_mut] = self.params[i_mut]*(1 - self.val_mut +\
+                    2*random()*self.val_mut)
+                self.params[i_mut] = -1
+            else:
+                i -= 1
         self.params = new_params
 
     # Definitions for sorting, making the class sortable
