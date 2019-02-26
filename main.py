@@ -11,6 +11,7 @@ from keras.layers import Dense, Conv1D, Flatten, MaxPooling1D, Dropout
 from keras.utils.np_utils import to_categorical
 from gene_testing import *
 from tensorflow import set_random_seed
+from keras.backend import clear_session
 
 
 if __name__ == '__main__':
@@ -67,7 +68,7 @@ if __name__ == '__main__':
 
 	rounds = 100
 	error = False
-
+	split_error = False
 	
 	number_of_networks = 3
 	end_networks = []
@@ -131,6 +132,7 @@ if __name__ == '__main__':
 					prediction = np.argmax(prediction, axis=1)
 					j.fitness = metrics.accuracy_score(y_validation, prediction)
 					print("Accuracy =", j.fitness, "with params:", j.params)
+					clear_session()
 				except:
 					print("Error in fitting with parameters:", j.params)
 					print("If this repeats all the time, the shuffling has left out a group from training")
@@ -141,6 +143,7 @@ if __name__ == '__main__':
 			if error == True:
 				error = False
 			elif split_error == True:
+				split_error = False
 				break
 			else:
 				print("Cycle:", i, "  The top fitness:", max([j.fitness for j in inv_list]))
