@@ -132,7 +132,7 @@ if __name__ == '__main__':
 					prediction = np.argmax(prediction, axis=1)
 					j.fitness = metrics.accuracy_score(y_validation, prediction)
 					print("Accuracy =", j.fitness, "with params:", j.params)
-					clear_session()
+					
 				except:
 					print("Error in fitting with parameters:", j.params)
 					print("If this repeats all the time, the shuffling has left out a group from training")
@@ -148,6 +148,7 @@ if __name__ == '__main__':
 			else:
 				print("Cycle:", i, "  The top fitness:", max([j.fitness for j in inv_list]))
 				inv_list = survival_of_the_fittest(inv_list, 0.4)
+				clear_session()
 		inv_list.sort()
 		end_networks.append(inv_list[0])
 
