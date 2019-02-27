@@ -66,7 +66,7 @@ if __name__ == '__main__':
 	inv_list = [Genetic_invidual([9, 1, 0.58, 26, 23, 23, 1], 0.3, 0.7)\
      for i in range(amount_of_inviduals)]
 
-	rounds = 100
+	rounds = 50
 	error = False
 	split_error = False
 	
@@ -267,7 +267,7 @@ if __name__ == '__main__':
 	final_data = np.load("X_test_kaggle.npy")
 	F_train = np.array([i[4:] for i in train_data])
 	F_validation = np.array([i[4:] for i in final_data])
-	y_train = classes_array
+	y_train = to_categorical(classes_array)
 	prediction_list = []
 	
 	for i in end_networks:
