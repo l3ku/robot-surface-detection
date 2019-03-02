@@ -11,6 +11,7 @@ Maybe cleaning?
 """
 
 import numpy as np
+from scipy.stats import *
 
 def extract_ravel(data):
     """
@@ -101,6 +102,24 @@ def extract_chanel_var_mean(data):
 
     return chanel_var_mean
 
+def extract_statistical(data):
+    statistical = []
+    for i in range(0,len(data)):
+        statistical.append([])
+
+        for j in range(0,len(data[0])):
+            payload = data[i][j]
+            gradient = np.gradient(payload)
+
+            statistical[i].append(np.mean(payload))
+            statistical[i].append(np.var(payload))
+            statistical[i].append(kurtosis(payload))
+            statistical[i].append(skew(payload))
+
+            statistical[i].append(np.mean(np.abs(gradient)))
+            statistical[i].append(np.var(np.abs(gradient)))
+
+    return statistical
 
 
 if __name__ == '__main__':
