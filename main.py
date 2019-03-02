@@ -7,6 +7,8 @@ from sklearn.ensemble import RandomForestClassifier
 from extract_features import *
 from sklearn.svm import SVC
 
+import warnings
+warnings.filterwarnings("ignore")
 
 if __name__ == '__main__':
 	train_data = np.load('X_train_kaggle.npy')
