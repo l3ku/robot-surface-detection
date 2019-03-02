@@ -2,167 +2,87 @@ import numpy as np
 from pprint import pprint
 import matplotlib.pyplot as plt
 from sklearn import preprocessing, model_selection, discriminant_analysis, metrics
-from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from extract_features import *
-from sklearn.svm import SVC
-
+from sklearn.feature_selection import RFECV
 import warnings
 warnings.filterwarnings("ignore")
 
 if __name__ == '__main__':
-	train_data = np.load('X_train_kaggle.npy')
-	#all_id_classes = pd.read_csv('y_train_final_kaggle.csv')
-	all_id_classes = np.genfromtxt('y_train_final_kaggle.csv',delimiter=',',dtype='str')
-	#groups_csv = pd.read_csv('groups.csv').values
-	groups_csv = np.genfromtxt('groups.csv',delimiter=',',dtype='str')
-	le = preprocessing.LabelEncoder()
-	le.fit(all_id_classes[:,1])
-	all_id_classes_transformed = le.transform(all_id_classes[:,1])
-	classes_array = np.array(all_id_classes_transformed)
+    # Model params
+    n_estimators = 800
+    max_depth = 5
+    criterion = 'entropy'
 
-	# Split the groups to training and validation data.
-	gss = model_selection.GroupShuffleSplit(n_splits=1, test_size=0.2)
-	data_split = gss.split(groups_csv[:, 0], groups_csv[:, 2], groups_csv[:, 1])
+    train_data = np.load('X_train_kaggle.npy')
+    #all_id_classes = pd.read_csv('y_train_final_kaggle.csv')
+    all_id_classes = np.genfromtxt('y_train_final_kaggle.csv',delimiter=',',dtype='str')
+    #groups_csv = pd.read_csv('groups.csv').values
+    groups_csv = np.genfromtxt('groups.csv',delimiter=',',dtype='str')
+    le = preprocessing.LabelEncoder()
+    le.fit(all_id_classes[:,1])
+    all_id_classes_transformed = le.transform(all_id_classes[:,1])
+    classes_array = np.array(all_id_classes_transformed)
 
-	# Initialize LDA
-	lda1 = discriminant_analysis.LinearDiscriminantAnalysis()
-	lda2 = discriminant_analysis.LinearDiscriminantAnalysis()
-	lda3 = discriminant_analysis.LinearDiscriminantAnalysis()
+    # Feature data
+    statistical_features = np.array(extract_statistical(train_data))
 
-	LR1 = LogisticRegression(random_state=0, solver='lbfgs', multi_class='multinomial')
-	LR2 = LogisticRegression(random_state=0, solver='lbfgs', multi_class='multinomial')
-	LR3 = LogisticRegression(random_state=0, solver='lbfgs', multi_class='multinomial')
+    ## Split the groups to training and testing data. The testing data should only
+    # be used in the final evaluation of the model and thus never included in
+    # training.
+    number_of_splits = 50
+    gss = model_selection.GroupShuffleSplit(n_splits=number_of_splits, test_size=0.2, random_state=0)
+    data_split = gss.split(groups_csv[:, 0], le.transform(groups_csv[:, 2]), groups_csv[:, 1])
 
-	RF1 = RandomForestClassifier(n_estimators=100, max_depth=5, random_state=0)
-	RF2 = RandomForestClassifier(n_estimators=100, max_depth=5, random_state=0)
-	RF3 = RandomForestClassifier(n_estimators=100, max_depth=5, random_state=0)
+    clf_name_list = ['RandomForestClassifier()']
+    score_list = [[] for i in range(len(clf_name_list))]
 
-	clf_list = [lda1, lda2, lda3, SVC(), SVC(), SVC(), SVC(kernel="linear"), SVC(kernel="linear"), SVC(kernel="linear"),\
-				LR1, LR2, LR3, RF1, RF2, RF3]
+    round = 1
+    for train, test in data_split:
+        clf_list = [
+            RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, random_state=0, criterion=criterion, bootstrap=False, n_jobs=-1)
+        ]
+        print(f'======== ROUND {round} =========')
+        y_train = classes_array[train]
+        y_validation = classes_array[test]
+        F_train = statistical_features[train]
+        F_validation = statistical_features[test]
 
-	# Feature data
-	ravel_data = np.array(extract_ravel(train_data))
-	mean_data = np.array(extract_mean(train_data))
-	var_mean_data = np.array(extract_var_mean(train_data))
+        for i, clf in enumerate(clf_list):
+            clf.fit(F_train, y_train)
+            # clf = RFECV(classifier, step=1, cv=5, n_jobs=-1, verbose=2)
+            # clf = clf.fit(F_train, y_train)
+            # print(clf.support_)
+            predicted = clf.predict(F_validation)
+            score = metrics.accuracy_score(y_validation, predicted)
+            print(f'{clf_name_list[i]} scored {score}...')
+            score_list[i].append(score)
 
-	score_list = []
+        round += 1
 
-	round = 0
-	for train, test in data_split:
-		y_train = classes_array[train]
-		y_validation = classes_array[test]
+    average_scores = np.mean(score_list, axis=1)
+    best_classifier = np.argmax(average_scores)
+    best_score = average_scores[best_classifier]
+    print(f'{clf_name_list[best_classifier]} got the best average score with {best_score}')
+    print(f'{clf_name_list[best_classifier]} variance: {np.var(score_list)}')
+    # for i in range(len(score_list)):
+    #     plt.plot(list(range(len(score_list[i]))), score_list[i], label=clf_name_list[i])
+    # plt.xlabel('Split')
+    # plt.ylabel('Accuracy')
+    # plt.title(f'{clf_name_list[best_classifier]} got the best average score with {best_score}')
+    # plt.show()
 
-		# a.) Use ravel features
-		F_train = ravel_data[train]
-		F_validation = ravel_data[test]
-		clf_list[0].fit(F_train, y_train)
-		predicted = clf_list[0].predict(F_validation)
-		print(f'a.) Round {round}: Accuracy with np.ravel(): {metrics.accuracy_score(y_validation, predicted)}')
-		score_list.append(metrics.accuracy_score(y_validation, predicted))
+    clf = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, random_state=0, criterion=criterion, bootstrap=False, n_jobs=-1)
+    clf.fit(statistical_features, classes_array)
 
-		clf_list[3].fit(F_train, y_train)
-		predicted = clf_list[3].predict(F_validation)
-		print(f'aa.) Round {round}: Accuracy with np.ravel(): {metrics.accuracy_score(y_validation, predicted)}')
-		score_list.append(metrics.accuracy_score(y_validation, predicted))
+    final_data = np.load("X_test_kaggle.npy")
+    statistical_features = np.array(extract_statistical(final_data))
+    predicted = clf.predict(statistical_features)
 
-		clf_list[6].fit(F_train, y_train)
-		predicted = clf_list[6].predict(F_validation)
-		print(f'aaa.) Round {round}: Accuracy with np.ravel(): {metrics.accuracy_score(y_validation, predicted)}')
-		score_list.append(metrics.accuracy_score(y_validation, predicted))
+    labels = list(le.inverse_transform(predicted))
 
-		clf_list[9].fit(F_train, y_train)
-		predicted = clf_list[9].predict(F_validation)
-		print(f'aaaa.) Round {round}: Accuracy with np.ravel(): {metrics.accuracy_score(y_validation, predicted)}')
-		score_list.append(metrics.accuracy_score(y_validation, predicted))
+    with open("submission.csv", "w") as fp:
+        fp.write("# Id,Surface\n")
 
-		clf_list[12].fit(F_train, y_train)
-		predicted = clf_list[12].predict(F_validation)
-		print(f'aaaaa.) Round {round}: Accuracy with np.ravel(): {metrics.accuracy_score(y_validation, predicted)}')
-		score_list.append(metrics.accuracy_score(y_validation, predicted))
-
-
-
-		# b.) Use mean features
-		F_train = mean_data[train]
-		F_validation = mean_data[test]
-		F_train = np.array(F_train)
-		F_validation = np.array(F_validation)
-
-		clf_list[1].fit(F_train, y_train)
-		predicted = clf_list[1].predict(F_validation)
-		print(f'b.) Round {round}: Accuracy with np.mean(axis=1): {metrics.accuracy_score(y_validation, predicted)}')
-		score_list.append(metrics.accuracy_score(y_validation, predicted))
-
-		clf_list[4].fit(F_train, y_train)
-		predicted = clf_list[4].predict(F_validation)
-		print(f'bb.) Round {round}: Accuracy with np.mean(axis=1): {metrics.accuracy_score(y_validation, predicted)}')
-		score_list.append(metrics.accuracy_score(y_validation, predicted))
-
-		clf_list[7].fit(F_train, y_train)
-		predicted = clf_list[7].predict(F_validation)
-		print(f'bbb.) Round {round}: Accuracy with np.mean(axis=1): {metrics.accuracy_score(y_validation, predicted)}')
-		score_list.append(metrics.accuracy_score(y_validation, predicted))
-
-		clf_list[10].fit(F_train, y_train)
-		predicted = clf_list[10].predict(F_validation)
-		print(f'bbbb.) Round {round}: Accuracy with np.mean(axis=1): {metrics.accuracy_score(y_validation, predicted)}')
-		score_list.append(metrics.accuracy_score(y_validation, predicted))
-
-		clf_list[13].fit(F_train, y_train)
-		predicted = clf_list[13].predict(F_validation)
-		print(f'bbbbb.) Round {round}: Accuracy with np.mean(axis=1): {metrics.accuracy_score(y_validation, predicted)}')
-		score_list.append(metrics.accuracy_score(y_validation, predicted))
-
-		# c.) Use mean and variance features
-		F_train = var_mean_data[train]
-		F_validation = var_mean_data[test]
-		F_train = np.array(F_train)
-		F_validation = np.array(F_validation)
-
-		clf_list[2].fit(F_train, y_train)
-		predicted = clf_list[2].predict(F_validation)
-		print(f'c.) Round {round}: Accuracy with mean and var: {metrics.accuracy_score(y_validation, predicted)}')
-		score_list.append(metrics.accuracy_score(y_validation, predicted))
-
-		clf_list[5].fit(F_train, y_train)
-		predicted = clf_list[5].predict(F_validation)
-		print(f'cc.) Round {round}: Accuracy with mean and var: {metrics.accuracy_score(y_validation, predicted)}')
-		score_list.append(metrics.accuracy_score(y_validation, predicted))
-
-		clf_list[8].fit(F_train, y_train)
-		predicted = clf_list[8].predict(F_validation)
-		print(f'ccc.) Round {round}: Accuracy with mean and var: {metrics.accuracy_score(y_validation, predicted)}')
-		score_list.append(metrics.accuracy_score(y_validation, predicted))
-
-		clf_list[11].fit(F_train, y_train)
-		predicted = clf_list[11].predict(F_validation)
-		print(f'cccc.) Round {round}: Accuracy with mean and var: {metrics.accuracy_score(y_validation, predicted)}')
-		score_list.append(metrics.accuracy_score(y_validation, predicted))
-
-		clf_list[14].fit(F_train, y_train)
-		predicted = clf_list[14].predict(F_validation)
-		print(f'ccccc.) Round {round}: Accuracy with mean and var: {metrics.accuracy_score(y_validation, predicted)}')
-		score_list.append(metrics.accuracy_score(y_validation, predicted))
-
-		round += 1
-
-	print("Best score:", max(score_list))
-	m = max(score_list)
-	print("Index for the classifier:", [i for i, j in enumerate(score_list) if j == m])
-
-	F_train = var_mean_data
-	y_train = classes_array
-	clf_list[14].fit(F_train, y_train)
-
-	final_data = np.load("X_test_kaggle.npy")
-	var_mean_data = np.array(extract_var_mean(final_data))
-	predicted = clf_list[14].predict(var_mean_data)
-
-	labels = list(le.inverse_transform(predicted))
-
-	with open("submission.csv", "w") as fp:
-		fp.write("# Id,Surface\n")
-
-		for i, label in enumerate(labels):
-			fp.write("%d,%s\n" % (i, label))
+        for i, label in enumerate(labels):
+            fp.write("%d,%s\n" % (i, label))
