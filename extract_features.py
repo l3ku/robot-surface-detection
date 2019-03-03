@@ -11,6 +11,8 @@ Maybe cleaning?
 """
 
 import numpy as np
+from scipy.misc import imresize
+from scipy.stats import *
 
 def extract_ravel(data):
     """
@@ -77,11 +79,58 @@ def extract_var_mean(data):
     return var_mean_data
 
 
+def extract_chanel_var_mean(data):
+    """
+    Calculates variance and mean from the data for each chanel and returns it
 
+    Parameters
+    ----------
+    data : list
+      The X_data from the train_test_split function made from the blocks
 
+    Returns
+    -------
+    var_mean_data : list
+      The same structure as the X_data, just the single sample layer full sensor
+      data replaced with the variances and means of chanel
+    """
+    chanel_var_mean = []
+    for i in range(0,len(data)):
+        chanel_var_mean.append([])
 
+        for j in range(0,len(data[0])):
+            chanel_var_mean[i].append((np.var(data[i][j]), np.mean(data[i][j])))
 
+    return chanel_var_mean
 
+def extract_statistical(data):
+    statistical = []
+    for i in range(0,len(data)):
+        statistical.append([])
+
+        for j in range(0,len(data[0])):
+            payload = data[i][j]
+            gradient = np.gradient(payload)
+
+            statistical[i].append(np.mean(payload))
+            statistical[i].append(np.var(payload))
+            statistical[i].append(kurtosis(payload))
+            statistical[i].append(skew(payload))
+
+            statistical[i].append(np.mean(np.abs(gradient)))
+            statistical[i].append(np.var(np.abs(gradient)))
+
+    return statistical
+
+def extract_as_3d_image(data):
+    data = np.array(data)
+    images = []
+    for i in range(0, len(data)):
+        img = np.stack((data[i, 6:],)*3, axis=-1)
+        img = (img-np.min(img))/np.ptp(img)
+        images.append(imresize(img, (img.shape[0]*20, img.shape[1], img.shape[2])))
+
+    return images
 
 
 if __name__ == '__main__':
